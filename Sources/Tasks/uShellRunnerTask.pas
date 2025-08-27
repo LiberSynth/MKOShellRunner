@@ -3,6 +3,8 @@ unit uShellRunnerTask;
 interface
 
 uses
+  { VCL }
+  Winapi.ShellAPI, Winapi.Windows,
   { Common }
   Common.uInterfaces, Common.uCustomTasks,
   { S }
@@ -68,8 +70,43 @@ end;
 { TShellRunnerTaskInstance }
 
 procedure TShellRunnerTaskInstance.Execute(const _OutputIntf: IMKOTaskOutput);
+var
+  SEInfo: TShellExecuteInfo;
+  ExitCode: DWORD;
+  ExecuteFile, ParamString, StartInString: string;
 begin
+
   inherited Execute(_OutputIntf);
+
+  ExecuteFile := Params[0]; //'C:\Windows\System32\calc.exe';
+
+  FillChar(SEInfo, SizeOf(SEInfo), 0);
+  SEInfo.cbSize := SizeOf(TShellExecuteInfo);
+
+  with SEInfo do
+  begin
+
+    fMask := SEE_MASK_NOCLOSEPROCESS;
+    lpFile := PChar(ExecuteFile);
+    {ParamString can contain theapplication parameters.}
+    // lpParameters := PChar(ParamString);
+    {StartInString specifies thename of the working
+    directory.If ommited, the current
+    directory is used.}
+    // lpDirectory := PChar(StartInString);
+    nShow := SW_SHOWNORMAL;
+
+  end;
+
+  if ShellExecuteEx(@SEInfo) then
+
+    repeat
+
+      Sleep(50);
+      GetExitCodeProcess(SEInfo.hProcess, ExitCode);
+
+    until (ExitCode <> STILL_ACTIVE) or Terminated;
+
 end;
 
 procedure TShellRunnerTaskInstance.Init(const _OutputIntf: IMKOTaskOutput);
